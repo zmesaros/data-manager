@@ -1,0 +1,12 @@
+Django==5.2.7
+djangorestframework==3.16.1
+django-cors-headers==4.9.0
+python-dotenv==1.2.1
+
+# Database drivers
+psycopg2-binary==2.9.11  # PostgreSQL
+mysqlclient==2.2.7        # MariaDB/MySQL
+pyodbc==5.3.0             # SQL Server
+
+# Optional: For SQL Server using mssql-django
+# mssql-django==1.4
