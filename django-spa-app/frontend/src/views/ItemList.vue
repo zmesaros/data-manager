@@ -272,4 +272,15 @@ export default {
 .fab-item:disabled { background-color: #ccc; cursor: not-allowed; }
 .loading, .error { text-align: center; padding: 40px; font-size: 18px; }
 .error { color: #dc3545; }
+
+/* Hide spin buttons for number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
 </style>

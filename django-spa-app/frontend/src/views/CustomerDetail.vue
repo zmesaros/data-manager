@@ -96,15 +96,15 @@
       </div>
 
       <div class="form-group">
-        <label for="is_active">
+        <label for="is_active">Active</label>
+        <div class="form-control-checkbox">
           <input
             id="is_active"
             v-model="customer.is_active"
             @change="autoSave"
             type="checkbox"
           />
-          Active
-        </label>
+        </div>
       </div>
 
       <div class="save-status" v-if="saveStatus">
@@ -383,5 +383,16 @@ textarea.form-control {
   border-radius: 4px;
   padding: 15px;
   margin-bottom: 20px;
+}
+
+.form-control-checkbox {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 10px;
+}
+
+.form-control-checkbox input[type="checkbox"] {
+  width: auto;
+  margin-top: 0;
 }
 </style>
