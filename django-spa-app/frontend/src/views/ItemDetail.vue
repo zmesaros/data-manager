@@ -172,6 +172,15 @@ export default {
       this.error = null;
       this.saveStatus = 'Saving...';
       
+      // Ensure item.price is a number and format to two decimal places before sending to backend
+      if (this.item.price !== undefined && this.item.price !== null) {
+        let priceValue = parseFloat(this.item.price);
+        if (isNaN(priceValue)) {
+          priceValue = 0;
+        }
+        this.item.price = parseFloat(priceValue.toFixed(2));
+      }
+
       try {
         if (this.isNewItem) {
           const response = await itemApi.create(this.item);
@@ -185,7 +194,7 @@ export default {
           }, 500);
         } else {
           const response = await itemApi.update(this.$route.params.id, this.item);
-          this.item = response.data;
+          this.item = response.data; // Update with backend response
           this.originalItem = { ...response.data };
           this.saveStatus = 'Saved successfully!';
           this.hasUnsavedChanges = false;
