@@ -2,7 +2,12 @@
   <div class="item-list">
     <div class="header sticky-header">
       <h1>Items</h1>
-      <input type="text" v-model="searchQuery" placeholder="Search..." class="search-input" />
+      <div class="actions">
+        <input type="text" v-model="searchQuery" placeholder="Search..." class="search-input" />
+        <button @click="addNewItem" class="btn-header btn-primary" title="New Item">&#x270E;</button>
+        <button @click="deleteSelectedItem" :disabled="!selectedItemId" class="btn-header btn-danger" title="Delete Selected">&#x1F5D1;</button>
+        <button @click="refreshList" class="btn-header" title="Refresh">&#x21bb;</button>
+      </div>
     </div>
 
     <div v-if="loading" class="loading">Loading...</div>
@@ -103,13 +108,7 @@
       </table>
     </div>
 
-    <div class="fab-container">
-      <div class="fab-menu" :class="{ open: isMenuOpen }">
-        <button @click="deleteSelectedItem" :disabled="!selectedItemId" class="fab-item btn-danger" title="Delete Selected">&#x1F5D1;</button>
-        <button @click="addNewItem" class="fab-item btn-primary" title="New Item">&#x270E;</button>
-      </div>
-      <button @click="toggleMenu" class="fab-main"><span>+</span></button>
-    </div>
+
   </div>
 </template>
 
@@ -128,8 +127,8 @@ export default {
       emptyItemAdded: false,
       isCreatingNewItem: false,
       selectedItemId: null,
-      isMenuOpen: false,
       sortKey: '',
+      refreshKey: 0,
       sortAsc: true,
       searchQuery: '',
       editingCell: { rowIndex: null, colIndex: null },
@@ -150,6 +149,7 @@ export default {
       });
     },
     sortedItems() {
+      if (this.refreshKey < 0) return []; // Dependency for refresh
       if (!this.sortKey) {
         return this.filteredItems;
       }
@@ -211,8 +211,8 @@ export default {
       if (this.sortKey === key) this.sortAsc = !this.sortAsc;
       else { this.sortKey = key; this.sortAsc = true; }
     },
-    toggleMenu() {
-      this.isMenuOpen = !this.isMenuOpen;
+    refreshList() {
+      this.refreshKey++;
     },
     selectItem(item) {
       if (this.selectedItemId === item.id) return;
@@ -329,7 +329,6 @@ export default {
       this.items.push(newItem);
       this.emptyItemAdded = true;
       this.selectItem(newItem);
-      this.isMenuOpen = false;
       this.$nextTick(() => {
         const newRow = this.$el.querySelector(`[data-row-index="${this.filteredAndSortedItems.length - 1}"] input`);
         if (newRow) newRow.focus();
@@ -340,7 +339,6 @@ export default {
       if (!confirm('Are you sure you want to delete this item?')) return;
       try {
         await itemApi.delete(this.selectedItemId);
-        this.isMenuOpen = false;
         await this.loadAllItems();
       } catch (err) { alert('Failed to delete item: ' + (err.message || 'Unknown error')); }
     },
@@ -429,28 +427,25 @@ export default {
 <style scoped>
 .item-list { max-width: 1200px; margin: 0 auto; padding: 20px; }
 .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.sticky-header { position: sticky; top: 0; background-color: white; z-index: 10; padding-top: 20px; padding-bottom: 20px; }
+.sticky-header { position: sticky; top: 60px; background-color: white; z-index: 10; padding: 20px 0; border-bottom: 1px solid #ccc; }
+.actions { display: flex; align-items: center; gap: 5px; }
 .search-input { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; width: 300px; font-size: 14px; }
+.btn-header { padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; background-color: #f0f0f0; cursor: pointer; font-size: 14px; }
+.btn-header:hover { background-color: #e0e0e0; }
+.btn-header:disabled { background-color: #f0f0f0; color: #ccc; cursor: not-allowed; }
+.btn-primary { background-color: #007bff; color: white; }
+.btn-primary:hover { background-color: #0056b3; }
+.btn-danger { background-color: #dc3545; color: white; }
+.btn-danger:hover { background-color: #c82333; }
 .table-container { margin-top: 20px; }
-.data-table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-.data-table th, .data-table td { padding: 2px 8px; text-align: left; }
-.data-table th { background-color: #42b983; color: white; font-weight: bold; cursor: pointer; }
+.data-table { width: 100%; border-collapse: collapse; background: white; }
+.data-table th, .data-table td { padding: 2px 8px; text-align: left; border-bottom: 1px solid #eee; }
+.data-table th { background-color: #f8f9fa; color: #333; font-weight: 600; cursor: pointer; }
 .clickable-id { cursor: pointer; font-weight: bold; color: #007bff; }
 .clickable-id:hover { text-decoration: underline; }
-.inline-edit-input { width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+.inline-edit-input { width: 100%; padding: 5px; border: 1px solid transparent; border-radius: 4px; box-sizing: border-box; background-color: transparent; }
+.inline-edit-input:focus { outline: none; border: 1px solid #666; background-color: white; }
 .selected-row { background-color: #e9f5ff; }
-.fab-container { position: fixed; bottom: 30px; right: 30px; z-index: 1000; }
-.fab-main { width: 60px; height: 60px; border-radius: 50%; background-color: #42b983; color: white; border: none; font-size: 28px; line-height: 60px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.2s ease-in-out; }
-.fab-main span { display: inline-block; transition: transform 0.2s ease-in-out; }
-.fab-menu.open + .fab-main span { transform: rotate(45deg); }
-.fab-menu { position: absolute; bottom: 70px; right: 5px; display: flex; flex-direction: column; gap: 15px; align-items: center; }
-.fab-item { width: 48px; height: 48px; border-radius: 50%; color: white; border: none; font-size: 22px; line-height: 48px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer; transform: scale(0); transition: transform 0.2s ease-in-out, background-color 0.2s; }
-.fab-menu.open .fab-item { transform: scale(1); }
-.fab-item.btn-primary { background-color: #007bff; transition-delay: 0.1s; }
-.fab-item.btn-primary:hover { background-color: #0056b3; }
-.fab-item.btn-danger { background-color: #dc3545; transition-delay: 0.05s; }
-.fab-item.btn-danger:hover { background-color: #c82333; }
-.fab-item:disabled { background-color: #ccc; cursor: not-allowed; }
 .loading, .error { text-align: center; padding: 40px; font-size: 18px; }
 .error { color: #dc3545; }
 

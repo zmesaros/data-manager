@@ -14,6 +14,14 @@ A full-stack web application built with Django REST Framework for the backend an
 
 The application has undergone significant enhancements to improve user experience and functionality:
 
+### UI/UX Enhancements & Bug Fixes (November 2025)
+
+-   **Redesigned List Pages**: The Item and Customer list pages have been redesigned for a cleaner, more modern look inspired by Business Central list pages.
+-   **Header Action Bar**: The floating action button (FAB) has been replaced with a more traditional action bar in the header, containing "New", "Delete", and "Refresh" actions.
+-   **Improved Styling**: The UI has been refined with reduced padding and spacing for a more compact view, and the focus outline on edited fields has been improved for a cleaner look.
+-   **Consistent Keyboard Navigation**: The keyboard navigation has been made consistent across all fields, including the email field, for a smoother user experience.
+-   **Email Validation**: Added client-side validation for email fields to ensure data integrity.
+
 ### Bug Fixes & Performance
 
 -   **Compilation & Linting**: Resolved critical syntax and linting errors in the frontend code that prevented the application from compiling.
@@ -24,6 +32,10 @@ The application has undergone significant enhancements to improve user experienc
 ### List Views (Items & Customers)
 
 -   **No Pagination**: All records are now loaded and displayed on a single page.
+-   **Header Action Bar**: A sticky header contains a search bar and an action bar with the following actions:
+    -   **New**: Create a new record.
+    -   **Delete**: Delete the selected record.
+    -   **Refresh**: Refresh the list and re-apply the current sort order.
 -   **Keyboard Navigation**:
     -   Use **Arrow Left/Right** to navigate between fields within a record.
     -   Use **Arrow Up/Down** to navigate between records.
@@ -31,9 +43,6 @@ The application has undergone significant enhancements to improve user experienc
 -   **Dynamic Search**: A sticky search bar in the header allows real-time filtering of records as you type.
     -   **Items**: Search by Name and Category.
     -   **Customers**: Search by First Name, Last Name, Email, Phone, and City.
--   **Floating Action Button (FAB) Menu**:
-    -   A sticky circular button in the bottom-right corner provides quick access to "New" and "Delete Selected" actions.
-    -   The "Delete Selected" button is enabled only when a record is selected.
 -   **Row Selection**: Clicking a row (or navigating to it with arrow keys) selects it, highlighting it visually.
 -   **Column Sorting**: Click on table headers to sort records by that column (ascending/descending).
 -   **Compact UI**: Reduced padding between table rows for a more condensed view.
