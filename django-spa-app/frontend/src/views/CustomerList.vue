@@ -365,6 +365,7 @@ export default {
           const response = await customerApi.update(customer.id, customer);
           // Update the local customer with the response from the backend
           Object.assign(customer, response.data);
+          this.customers = [...this.customers]; // Force reactivity
           console.log(`Customer ${customer.id} updated successfully.`);
         } catch (err) {
           console.error(`Failed to save customer ${customer.id}:`, err);
@@ -385,6 +386,7 @@ export default {
         if (index !== -1) {
           Object.assign(this.customers[index], newCustomerData.data);
           this.selectedCustomerId = newCustomerData.data.id;
+          this.customers = [...this.customers]; // Force reactivity
         }
         this.emptyCustomerAdded = false;
       } catch (err) {

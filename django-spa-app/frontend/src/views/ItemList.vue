@@ -360,6 +360,7 @@ export default {
           const response = await itemApi.update(item.id, item);
           // Update the local item with the response from the backend
           Object.assign(item, response.data);
+          this.items = [...this.items]; // Force reactivity
           console.log(`Item ${item.id} updated successfully.`);
         } catch (err) {
           console.error(`Failed to save item ${item.id}:`, err);
@@ -382,6 +383,7 @@ export default {
         if (index !== -1) {
           Object.assign(this.items[index], newItemData.data);
           this.selectedItemId = newItemData.data.id;
+          this.items = [...this.items]; // Force reactivity
         }
         this.emptyItemAdded = false;
       } catch (err) {

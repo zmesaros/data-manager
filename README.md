@@ -14,6 +14,13 @@ A full-stack web application built with Django REST Framework for the backend an
 
 The application has undergone significant enhancements to improve user experience and functionality:
 
+### Bug Fixes & Performance
+
+-   **Compilation & Linting**: Resolved critical syntax and linting errors in the frontend code that prevented the application from compiling.
+-   **Sorting Stability**: Corrected a significant bug in the list views where the sort order would incorrectly revert to a previous state when editing multiple records sequentially. The sorting is now stable and predictable.
+-   **Automatic Re-sorting**: The list now automatically and smoothly re-sorts itself after an edit is completed, ensuring the data displayed is always in the correct order without requiring a manual refresh.
+-   **In-Edit Stability**: Fixed an issue where records would "jump" or re-sort while actively being edited, providing a much smoother editing experience.
+
 ### List Views (Items & Customers)
 
 -   **No Pagination**: All records are now loaded and displayed on a single page.
