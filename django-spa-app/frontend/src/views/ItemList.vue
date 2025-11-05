@@ -23,11 +23,81 @@
         <tbody @keydown="handleKeydown">
           <tr v-for="(item, rowIndex) in filteredAndSortedItems" :key="item.id" @click="selectItem(item)" :class="{ 'selected-row': item.id === selectedItemId }">
             <td @click.stop="viewDetail(item.id)" class="clickable-id">{{ item.id }}</td>
-            <td><input type="text" v-model="item.name" @blur="saveItem(item)" class="inline-edit-input" :data-row-index="rowIndex" data-col-index="0" /></td>
-            <td><input type="text" v-model="item.category" @blur="saveItem(item)" class="inline-edit-input" :data-row-index="rowIndex" data-col-index="1" /></td>
-            <td><input type="number" v-model.number="item.quantity" @blur="saveItem(item)" class="inline-edit-input" :data-row-index="rowIndex" data-col-index="2" /></td>
-            <td><input type="number" v-model.number="item.price" @blur="saveItem(item)" class="inline-edit-input" step="0.01" :data-row-index="rowIndex" data-col-index="3" /></td>
-            <td><input type="checkbox" v-model="item.is_active" @change="saveItem(item)" :data-row-index="rowIndex" data-col-index="4" /></td>
+            <td>
+              <input 
+                type="text"
+                v-model="item.name"
+                @blur="saveItem(item); exitEditMode()"
+                @focus="startEditMode(rowIndex, 0)"
+                @keydown.f2="startEditMode(rowIndex, 0, $event)"
+                @keydown.esc="exitEditMode(true)"
+                @keydown.tab="saveItem(item); exitEditMode()"
+                class="inline-edit-input"
+                :data-row-index="rowIndex"
+                data-col-index="0"
+                :ref="`input-${rowIndex}-0`"
+              />
+            </td>
+            <td>
+              <input 
+                type="text"
+                v-model="item.category"
+                @blur="saveItem(item); exitEditMode()"
+                @focus="startEditMode(rowIndex, 1)"
+                @keydown.f2="startEditMode(rowIndex, 1, $event)"
+                @keydown.esc="exitEditMode(true)"
+                @keydown.tab="saveItem(item); exitEditMode()"
+                class="inline-edit-input"
+                :data-row-index="rowIndex"
+                data-col-index="1"
+                :ref="`input-${rowIndex}-1`"
+              />
+            </td>
+            <td>
+              <input 
+                :type="editingCell.rowIndex === rowIndex && editingCell.colIndex === 2 ? 'text' : 'number'"
+                v-model.number="item.quantity"
+                @blur="saveItem(item); exitEditMode()"
+                @focus="startEditMode(rowIndex, 2)"
+                @keydown.f2="startEditMode(rowIndex, 2, $event)"
+                @keydown.esc="exitEditMode(true)"
+                @keydown.tab="saveItem(item); exitEditMode()"
+                class="inline-edit-input"
+                :data-row-index="rowIndex"
+                data-col-index="2"
+                :ref="`input-${rowIndex}-2`"
+              />
+            </td>
+            <td>
+              <input 
+                :type="editingCell.rowIndex === rowIndex && editingCell.colIndex === 3 ? 'text' : 'number'"
+                v-model.number="item.price"
+                @blur="saveItem(item); exitEditMode()"
+                @focus="startEditMode(rowIndex, 3)"
+                @keydown.f2="startEditMode(rowIndex, 3, $event)"
+                @keydown.esc="exitEditMode(true)"
+                @keydown.tab="saveItem(item); exitEditMode()"
+                class="inline-edit-input"
+                step="0.01"
+                :data-row-index="rowIndex"
+                data-col-index="3"
+                :ref="`input-${rowIndex}-3`"
+              />
+            </td>
+            <td>
+              <input 
+                type="checkbox"
+                v-model="item.is_active"
+                @change="saveItem(item)"
+                @blur="saveItem(item); exitEditMode()"
+                @focus="startEditMode(rowIndex, 4)"
+                @keydown.esc="exitEditMode(true)"
+                @keydown.tab="saveItem(item); exitEditMode()"
+                :data-row-index="rowIndex"
+                data-col-index="4"
+                :ref="`input-${rowIndex}-4`"
+              />
+            </td>
           </tr>
         </tbody>
       </table>
@@ -62,28 +132,40 @@ export default {
       sortKey: '',
       sortAsc: true,
       searchQuery: '',
+      editingCell: { rowIndex: null, colIndex: null },
+      isEditingActive: false,
+      sortedItemsSnapshot: [],
     };
   },
   computed: {
-    filteredAndSortedItems() {
-      let filtered = this.items;
-      if (this.searchQuery) {
-        const lowerCaseQuery = this.searchQuery.toLowerCase();
-        filtered = this.items.filter(item => {
-          return item.id === null || 
-                 (item.name && item.name.toLowerCase().includes(lowerCaseQuery)) ||
-                 (item.category && item.category.toLowerCase().includes(lowerCaseQuery));
-        });
+    filteredItems() {
+      if (!this.searchQuery) {
+        return this.items;
       }
-      if (!this.sortKey) return filtered;
-      return [...filtered].sort((a, b) => {
+      const lowerCaseQuery = this.searchQuery.toLowerCase();
+      return this.items.filter(item => {
+        return item.id === null || 
+               (item.name && item.name.toLowerCase().includes(lowerCaseQuery)) ||
+               (item.category && item.category.toLowerCase().includes(lowerCaseQuery));
+      });
+    },
+    sortedItems() {
+      if (!this.sortKey) {
+        return this.filteredItems;
+      }
+      const sorted = [...this.filteredItems].sort((a, b) => {
         if (a.id === null) return 1;
         if (b.id === null) return -1;
         let valA = a[this.sortKey];
         let valB = b[this.sortKey];
         if (valA === null || valA === undefined) return 1;
         if (valB === null || valB === undefined) return -1;
-        if (typeof valA === 'string') {
+
+        // Handle numeric sorting for 'price' and 'quantity'
+        if (this.sortKey === 'price' || this.sortKey === 'quantity') {
+          valA = parseFloat(valA);
+          valB = parseFloat(valB);
+        } else if (typeof valA === 'string') {
           valA = valA.toLowerCase();
           valB = valB.toLowerCase();
         }
@@ -91,6 +173,30 @@ export default {
         if (valA > valB) return this.sortAsc ? 1 : -1;
         return 0;
       });
+      return sorted;
+    },
+    filteredAndSortedItems() {
+      if (this.isEditingActive) {
+        return this.sortedItemsSnapshot;
+      }
+      return this.sortedItems;
+    }
+  },
+  watch: {
+    sortedItems: {
+      handler(newVal) {
+        if (!this.isEditingActive) {
+          this.sortedItemsSnapshot = newVal;
+        }
+      },
+      immediate: true
+    },
+    isEditingActive(newVal) {
+      if (newVal === false) {
+        this.$nextTick(() => {
+          this.sortedItemsSnapshot = [...this.sortedItems];
+        });
+      }
     }
   },
   mounted() {
@@ -128,41 +234,75 @@ export default {
     },
     handleKeydown(event) {
       const { key } = event;
-      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) return;
-      event.preventDefault();
       const target = event.target;
-      const rowIndex = this.filteredAndSortedItems.findIndex(i => i.id === this.selectedItemId);
-      const colIndex = parseInt(target.dataset.colIndex, 10);
-      let nextRowIndex = rowIndex;
-      let nextColIndex = colIndex;
+      const isInput = target.tagName === 'INPUT';
+      const currentRowIndex = parseInt(target.dataset.rowIndex, 10);
+      const currentColIndex = parseInt(target.dataset.colIndex, 10);
+
+      let preventDefault = false;
+
+      if (isInput) {
+        const isTextType = target.type === 'text';
+        const cursorAtStart = target.selectionStart === 0;
+        const cursorAtEnd = target.selectionEnd === target.value.length;
+
+        if (key === 'ArrowLeft') {
+          if (isTextType && !cursorAtStart) {
+            return; // Allow cursor to move within the text input
+          } else {
+            preventDefault = true;
+          }
+        } else if (key === 'ArrowRight') {
+          if (isTextType && !cursorAtEnd) {
+            return; // Allow cursor to move within the text input
+          } else {
+            preventDefault = true;
+          }
+        } else if (['ArrowUp', 'ArrowDown'].includes(key)) {
+          preventDefault = true;
+        }
+      }
+
+      if (preventDefault) {
+        event.preventDefault();
+      }
+
+      let nextRowIndex = currentRowIndex;
+      let nextColIndex = currentColIndex;
+
       switch (key) {
         case 'ArrowUp':
-          nextRowIndex = rowIndex > 0 ? rowIndex - 1 : this.filteredAndSortedItems.length - 1;
-          this.selectItem(this.filteredAndSortedItems[nextRowIndex]);
+          nextRowIndex = currentRowIndex > 0 ? currentRowIndex - 1 : -1; // -1 indicates no move
           break;
         case 'ArrowDown':
-          if (rowIndex === this.filteredAndSortedItems.length - 1) {
-            this.addNewItem();
-            this.$nextTick(() => {
-              const newRow = this.filteredAndSortedItems.find(i => i.id === null);
-              const newRowIndex = this.filteredAndSortedItems.indexOf(newRow);
-              const nextElement = this.$el.querySelector(`[data-row-index="${newRowIndex}"][data-col-index="${colIndex}"]`);
-              if (nextElement) nextElement.focus();
-            });
-            return;
-          }
-          nextRowIndex = rowIndex + 1;
-          this.selectItem(this.filteredAndSortedItems[nextRowIndex]);
+          nextRowIndex = currentRowIndex < this.filteredAndSortedItems.length - 1 ? currentRowIndex + 1 : -1;
           break;
         case 'ArrowLeft':
-          nextColIndex = colIndex > 0 ? colIndex - 1 : 4;
+          nextColIndex = currentColIndex > 0 ? currentColIndex - 1 : -1;
           break;
         case 'ArrowRight':
-          nextColIndex = colIndex < 4 ? colIndex + 1 : 0;
+          nextColIndex = currentColIndex < 4 ? currentColIndex + 1 : -1; // 4 is the last column index
           break;
+        default:
+          return;
       }
-      const nextElement = this.$el.querySelector(`[data-row-index="${nextRowIndex}"][data-col-index="${nextColIndex}"]`);
-      if (nextElement) nextElement.focus();
+
+      if (nextRowIndex !== -1 && nextColIndex !== -1) {
+        this.$nextTick(() => {
+          const nextElement = this.$el.querySelector(`[data-row-index="${nextRowIndex}"][data-col-index="${nextColIndex}"]`);
+          if (nextElement) {
+            nextElement.focus();
+            // If moving to a text input, set cursor to beginning/end based on arrow key
+            if (nextElement.type === 'text') {
+              if (key === 'ArrowLeft') {
+                nextElement.setSelectionRange(nextElement.value.length, nextElement.value.length);
+              } else if (key === 'ArrowRight') {
+                nextElement.setSelectionRange(0, 0);
+              }
+            }
+          }
+        });
+      }
     },
     async loadAllItems() {
       this.loading = true; this.error = null; this.selectedItemId = null;
@@ -209,7 +349,18 @@ export default {
       if (this.saveTimeout) clearTimeout(this.saveTimeout);
       this.saveTimeout = setTimeout(async () => {
         try {
-          await itemApi.update(item.id, item);
+          // Ensure item.price is a number and format to two decimal places before sending to backend
+          if (item.price !== undefined && item.price !== null) {
+            let priceValue = parseFloat(item.price);
+            if (isNaN(priceValue)) {
+              priceValue = 0;
+            }
+            item.price = parseFloat(priceValue.toFixed(2));
+          }
+          const response = await itemApi.update(item.id, item);
+          // Update the local item with the response from the backend
+          Object.assign(item, response.data);
+          this.items = [...this.items]; // Force reactivity
           console.log(`Item ${item.id} updated successfully.`);
         } catch (err) {
           console.error(`Failed to save item ${item.id}:`, err);
@@ -232,6 +383,7 @@ export default {
         if (index !== -1) {
           Object.assign(this.items[index], newItemData.data);
           this.selectedItemId = newItemData.data.id;
+          this.items = [...this.items]; // Force reactivity
         }
         this.emptyItemAdded = false;
       } catch (err) {
@@ -240,6 +392,35 @@ export default {
       } finally {
         this.isCreatingNewItem = false;
       }
+    },
+    startEditMode(rowIndex, colIndex, event) {
+      this.editingCell = { rowIndex, colIndex };
+      this.isEditingActive = true; // Set editing flag
+      if (event && event.key === 'F2') {
+        event.preventDefault();
+        this.$nextTick(() => {
+          const inputRef = `input-${rowIndex}-${colIndex}`;
+          const inputElement = this.$refs[inputRef];
+          let elementToFocus = null;
+          if (Array.isArray(inputElement)) {
+            elementToFocus = inputElement[0];
+          } else {
+            elementToFocus = inputElement;
+          }
+
+          if (elementToFocus) {
+            elementToFocus.focus();
+            if (elementToFocus.type === 'text') {
+              elementToFocus.setSelectionRange(elementToFocus.value.length, elementToFocus.value.length);
+            }
+          }
+        });
+      }
+    },
+    exitEditMode() {
+      // For now, just exit edit mode. Revert logic can be added if needed.
+      this.editingCell = { rowIndex: null, colIndex: null };
+      this.isEditingActive = false; // Clear editing flag
     },
   },
 };
@@ -272,4 +453,15 @@ export default {
 .fab-item:disabled { background-color: #ccc; cursor: not-allowed; }
 .loading, .error { text-align: center; padding: 40px; font-size: 18px; }
 .error { color: #dc3545; }
+
+/* Hide spin buttons for number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
 </style>

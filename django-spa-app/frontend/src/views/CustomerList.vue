@@ -24,12 +24,95 @@
         <tbody @keydown="handleKeydown">
           <tr v-for="(customer, rowIndex) in filteredAndSortedCustomers" :key="customer.id" @click="selectCustomer(customer)" :class="{ 'selected-row': customer.id === selectedCustomerId }">
             <td @click.stop="viewDetail(customer.id)" class="clickable-id">{{ customer.id }}</td>
-            <td><input type="text" v-model="customer.first_name" @blur="saveCustomer(customer)" class="inline-edit-input" :data-row-index="rowIndex" data-col-index="0" /></td>
-            <td><input type="text" v-model="customer.last_name" @blur="saveCustomer(customer)" class="inline-edit-input" :data-row-index="rowIndex" data-col-index="1" /></td>
-            <td><input type="email" v-model="customer.email" @blur="saveCustomer(customer)" class="inline-edit-input" :data-row-index="rowIndex" data-col-index="2" /></td>
-            <td><input type="text" v-model="customer.phone" @blur="saveCustomer(customer)" class="inline-edit-input" :data-row-index="rowIndex" data-col-index="3" /></td>
-            <td><input type="text" v-model="customer.city" @blur="saveCustomer(customer)" class="inline-edit-input" :data-row-index="rowIndex" data-col-index="4" /></td>
-            <td><input type="checkbox" v-model="customer.is_active" @change="saveCustomer(customer)" :data-row-index="rowIndex" data-col-index="5" /></td>
+            <td>
+              <input 
+                type="text"
+                v-model="customer.first_name"
+                @blur="saveCustomer(customer); exitEditMode()"
+                @focus="startEditMode(rowIndex, 0)"
+                @keydown.f2="startEditMode(rowIndex, 0, $event)"
+                @keydown.esc="exitEditMode()"
+                @keydown.tab="saveCustomer(customer); exitEditMode()"
+                class="inline-edit-input"
+                :data-row-index="rowIndex"
+                data-col-index="0"
+                :ref="`input-${rowIndex}-0`"
+              />
+            </td>
+            <td>
+              <input 
+                type="text"
+                v-model="customer.last_name"
+                @blur="saveCustomer(customer); exitEditMode()"
+                @focus="startEditMode(rowIndex, 1)"
+                @keydown.f2="startEditMode(rowIndex, 1, $event)"
+                @keydown.esc="exitEditMode()"
+                @keydown.tab="saveCustomer(customer); exitEditMode()"
+                class="inline-edit-input"
+                :data-row-index="rowIndex"
+                data-col-index="1"
+                :ref="`input-${rowIndex}-1`"
+              />
+            </td>
+            <td>
+              <input 
+                type="email"
+                v-model="customer.email"
+                @blur="saveCustomer(customer); exitEditMode()"
+                @focus="startEditMode(rowIndex, 2)"
+                @keydown.f2="startEditMode(rowIndex, 2, $event)"
+                @keydown.esc="exitEditMode()"
+                @keydown.tab="saveCustomer(customer); exitEditMode()"
+                class="inline-edit-input"
+                :data-row-index="rowIndex"
+                data-col-index="2"
+                :ref="`input-${rowIndex}-2`"
+              />
+            </td>
+            <td>
+              <input 
+                type="text"
+                v-model="customer.phone"
+                @blur="saveCustomer(customer); exitEditMode()"
+                @focus="startEditMode(rowIndex, 3)"
+                @keydown.f2="startEditMode(rowIndex, 3, $event)"
+                @keydown.esc="exitEditMode()"
+                @keydown.tab="saveCustomer(customer); exitEditMode()"
+                class="inline-edit-input"
+                :data-row-index="rowIndex"
+                data-col-index="3"
+                :ref="`input-${rowIndex}-3`"
+              />
+            </td>
+            <td>
+              <input 
+                type="text"
+                v-model="customer.city"
+                @blur="saveCustomer(customer); exitEditMode()"
+                @focus="startEditMode(rowIndex, 4)"
+                @keydown.f2="startEditMode(rowIndex, 4, $event)"
+                @keydown.esc="exitEditMode()"
+                @keydown.tab="saveCustomer(customer); exitEditMode()"
+                class="inline-edit-input"
+                :data-row-index="rowIndex"
+                data-col-index="4"
+                :ref="`input-${rowIndex}-4`"
+              />
+            </td>
+            <td>
+              <input 
+                type="checkbox"
+                v-model="customer.is_active"
+                @change="saveCustomer(customer)"
+                @blur="saveCustomer(customer); exitEditMode()"
+                @focus="startEditMode(rowIndex, 5)"
+                @keydown.esc="exitEditMode()"
+                @keydown.tab="saveCustomer(customer); exitEditMode()"
+                :data-row-index="rowIndex"
+                data-col-index="5"
+                :ref="`input-${rowIndex}-5`"
+              />
+            </td>
           </tr>
         </tbody>
       </table>
@@ -64,24 +147,31 @@ export default {
       sortKey: '',
       sortAsc: true,
       searchQuery: '',
+      editingCell: { rowIndex: null, colIndex: null },
+      isEditingActive: false,
+      sortedCustomersSnapshot: [],
     };
   },
   computed: {
-    filteredAndSortedCustomers() {
-      let filtered = this.customers;
-      if (this.searchQuery) {
-        const lowerCaseQuery = this.searchQuery.toLowerCase();
-        filtered = this.customers.filter(customer => {
-          return customer.id === null || 
-                 (customer.first_name && customer.first_name.toLowerCase().includes(lowerCaseQuery)) ||
-                 (customer.last_name && customer.last_name.toLowerCase().includes(lowerCaseQuery)) ||
-                 (customer.email && customer.email.toLowerCase().includes(lowerCaseQuery)) ||
-                 (customer.phone && customer.phone.toLowerCase().includes(lowerCaseQuery)) ||
-                 (customer.city && customer.city.toLowerCase().includes(lowerCaseQuery));
-        });
+    filteredCustomers() {
+      if (!this.searchQuery) {
+        return this.customers;
       }
-      if (!this.sortKey) return filtered;
-      return [...filtered].sort((a, b) => {
+      const lowerCaseQuery = this.searchQuery.toLowerCase();
+      return this.customers.filter(customer => {
+        return customer.id === null || 
+               (customer.first_name && customer.first_name.toLowerCase().includes(lowerCaseQuery)) ||
+               (customer.last_name && customer.last_name.toLowerCase().includes(lowerCaseQuery)) ||
+               (customer.email && customer.email.toLowerCase().includes(lowerCaseQuery)) ||
+               (customer.phone && customer.phone.toLowerCase().includes(lowerCaseQuery)) ||
+               (customer.city && customer.city.toLowerCase().includes(lowerCaseQuery));
+      });
+    },
+    sortedCustomers() {
+      if (!this.sortKey) {
+        return this.filteredCustomers;
+      }
+      const sorted = [...this.filteredCustomers].sort((a, b) => {
         if (a.id === null) return 1;
         if (b.id === null) return -1;
         let valA = a[this.sortKey];
@@ -96,6 +186,30 @@ export default {
         if (valA > valB) return this.sortAsc ? 1 : -1;
         return 0;
       });
+      return sorted;
+    },
+    filteredAndSortedCustomers() {
+      if (this.isEditingActive) {
+        return this.sortedCustomersSnapshot;
+      }
+      return this.sortedCustomers;
+    }
+  },
+  watch: {
+    sortedCustomers: {
+      handler(newVal) {
+        if (!this.isEditingActive) {
+          this.sortedCustomersSnapshot = newVal;
+        }
+      },
+      immediate: true
+    },
+    isEditingActive(newVal) {
+      if (newVal === false) {
+        this.$nextTick(() => {
+          this.sortedCustomersSnapshot = [...this.sortedCustomers];
+        });
+      }
     }
   },
   mounted() {
@@ -133,41 +247,75 @@ export default {
     },
     handleKeydown(event) {
       const { key } = event;
-      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) return;
-      event.preventDefault();
       const target = event.target;
-      const rowIndex = this.filteredAndSortedCustomers.findIndex(c => c.id === this.selectedCustomerId);
-      const colIndex = parseInt(target.dataset.colIndex, 10);
-      let nextRowIndex = rowIndex;
-      let nextColIndex = colIndex;
+      const isInput = target.tagName === 'INPUT';
+      const currentRowIndex = parseInt(target.dataset.rowIndex, 10);
+      const currentColIndex = parseInt(target.dataset.colIndex, 10);
+
+      let preventDefault = false;
+
+      if (isInput) {
+        const isTextType = target.type === 'text' || target.type === 'email';
+        const cursorAtStart = target.selectionStart === 0;
+        const cursorAtEnd = target.selectionEnd === target.value.length;
+
+        if (key === 'ArrowLeft') {
+          if (isTextType && !cursorAtStart) {
+            return; // Allow cursor to move within the text input
+          } else {
+            preventDefault = true;
+          }
+        } else if (key === 'ArrowRight') {
+          if (isTextType && !cursorAtEnd) {
+            return; // Allow cursor to move within the text input
+          } else {
+            preventDefault = true;
+          }
+        } else if (['ArrowUp', 'ArrowDown'].includes(key)) {
+          preventDefault = true;
+        }
+      }
+
+      if (preventDefault) {
+        event.preventDefault();
+      }
+
+      let nextRowIndex = currentRowIndex;
+      let nextColIndex = currentColIndex;
+
       switch (key) {
         case 'ArrowUp':
-          nextRowIndex = rowIndex > 0 ? rowIndex - 1 : this.filteredAndSortedCustomers.length - 1;
-          this.selectCustomer(this.filteredAndSortedCustomers[nextRowIndex]);
+          nextRowIndex = currentRowIndex > 0 ? currentRowIndex - 1 : -1; // -1 indicates no move
           break;
         case 'ArrowDown':
-          if (rowIndex === this.filteredAndSortedCustomers.length - 1) {
-            this.addNewCustomer();
-            this.$nextTick(() => {
-              const newRow = this.filteredAndSortedCustomers.find(c => c.id === null);
-              const newRowIndex = this.filteredAndSortedCustomers.indexOf(newRow);
-              const nextElement = this.$el.querySelector(`[data-row-index="${newRowIndex}"][data-col-index="${colIndex}"]`);
-              if (nextElement) nextElement.focus();
-            });
-            return;
-          }
-          nextRowIndex = rowIndex + 1;
-          this.selectCustomer(this.filteredAndSortedCustomers[nextRowIndex]);
+          nextRowIndex = currentRowIndex < this.filteredAndSortedCustomers.length - 1 ? currentRowIndex + 1 : -1;
           break;
         case 'ArrowLeft':
-          nextColIndex = colIndex > 0 ? colIndex - 1 : 5;
+          nextColIndex = currentColIndex > 0 ? currentColIndex - 1 : -1;
           break;
         case 'ArrowRight':
-          nextColIndex = colIndex < 5 ? colIndex + 1 : 0;
+          nextColIndex = currentColIndex < 5 ? currentColIndex + 1 : -1; // 5 is the last column index
           break;
+        default:
+          return;
       }
-      const nextElement = this.$el.querySelector(`[data-row-index="${nextRowIndex}"][data-col-index="${nextColIndex}"]`);
-      if (nextElement) nextElement.focus();
+
+      if (nextRowIndex !== -1 && nextColIndex !== -1) {
+        this.$nextTick(() => {
+          const nextElement = this.$el.querySelector(`[data-row-index="${nextRowIndex}"][data-col-index="${nextColIndex}"]`);
+          if (nextElement) {
+            nextElement.focus();
+            // If moving to a text input, set cursor to beginning/end based on arrow key
+            if (nextElement.type === 'text' || nextElement.type === 'email') {
+              if (key === 'ArrowLeft') {
+                nextElement.setSelectionRange(nextElement.value.length, nextElement.value.length);
+              } else if (key === 'ArrowRight') {
+                nextElement.setSelectionRange(0, 0);
+              }
+            }
+          }
+        });
+      }
     },
     async loadAllCustomers() {
       this.loading = true; this.error = null; this.selectedCustomerId = null;
@@ -214,7 +362,10 @@ export default {
       if (this.saveTimeout) clearTimeout(this.saveTimeout);
       this.saveTimeout = setTimeout(async () => {
         try {
-          await customerApi.update(customer.id, customer);
+          const response = await customerApi.update(customer.id, customer);
+          // Update the local customer with the response from the backend
+          Object.assign(customer, response.data);
+          this.customers = [...this.customers]; // Force reactivity
           console.log(`Customer ${customer.id} updated successfully.`);
         } catch (err) {
           console.error(`Failed to save customer ${customer.id}:`, err);
@@ -235,6 +386,7 @@ export default {
         if (index !== -1) {
           Object.assign(this.customers[index], newCustomerData.data);
           this.selectedCustomerId = newCustomerData.data.id;
+          this.customers = [...this.customers]; // Force reactivity
         }
         this.emptyCustomerAdded = false;
       } catch (err) {
@@ -243,6 +395,34 @@ export default {
       } finally {
         this.isCreatingNewItem = false;
       }
+    },
+    startEditMode(rowIndex, colIndex, event) {
+      this.editingCell = { rowIndex, colIndex };
+      this.isEditingActive = true; // Set editing flag
+      if (event && event.key === 'F2') {
+        event.preventDefault();
+        this.$nextTick(() => {
+          const inputRef = `input-${rowIndex}-${colIndex}`;
+          const inputElement = this.$refs[inputRef];
+          let elementToFocus = null;
+          if (Array.isArray(inputElement)) {
+            elementToFocus = inputElement[0];
+          } else {
+            elementToFocus = inputElement;
+          }
+
+          if (elementToFocus) {
+            elementToFocus.focus();
+            if (elementToFocus.type === 'text' || elementToFocus.type === 'email') {
+              elementToFocus.setSelectionRange(elementToFocus.value.length, elementToFocus.value.length);
+            }
+          }
+        });
+      }
+    },
+    exitEditMode() {
+      this.editingCell = { rowIndex: null, colIndex: null };
+      this.isEditingActive = false; // Clear editing flag
     },
   },
 };

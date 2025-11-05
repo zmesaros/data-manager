@@ -72,15 +72,15 @@
         </div>
 
         <div class="form-group">
-          <label for="is_active">
+          <label for="is_active">Active</label>
+          <div class="form-control-checkbox">
             <input
               id="is_active"
               v-model="item.is_active"
               @change="autoSave"
               type="checkbox"
             />
-            Active
-          </label>
+          </div>
         </div>
       </div>
 
@@ -172,6 +172,15 @@ export default {
       this.error = null;
       this.saveStatus = 'Saving...';
       
+      // Ensure item.price is a number and format to two decimal places before sending to backend
+      if (this.item.price !== undefined && this.item.price !== null) {
+        let priceValue = parseFloat(this.item.price);
+        if (isNaN(priceValue)) {
+          priceValue = 0;
+        }
+        this.item.price = parseFloat(priceValue.toFixed(2));
+      }
+
       try {
         if (this.isNewItem) {
           const response = await itemApi.create(this.item);
@@ -185,7 +194,7 @@ export default {
           }, 500);
         } else {
           const response = await itemApi.update(this.$route.params.id, this.item);
-          this.item = response.data;
+          this.item = response.data; // Update with backend response
           this.originalItem = { ...response.data };
           this.saveStatus = 'Saved successfully!';
           this.hasUnsavedChanges = false;
@@ -358,5 +367,27 @@ textarea.form-control {
   border-radius: 4px;
   padding: 15px;
   margin-bottom: 20px;
+}
+
+/* Hide spin buttons for number inputs */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+.form-control-checkbox {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 10px;
+}
+
+.form-control-checkbox input[type="checkbox"] {
+  width: auto;
+  margin-top: 0;
 }
 </style>
