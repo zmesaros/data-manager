@@ -138,27 +138,22 @@ export default {
     };
   },
   computed: {
-    filteredAndSortedItems() {
-      let filtered = this.items;
-      if (this.searchQuery) {
-        const lowerCaseQuery = this.searchQuery.toLowerCase();
-        filtered = this.items.filter(item => {
-          return item.id === null || 
-                 (item.name && item.name.toLowerCase().includes(lowerCaseQuery)) ||
-                 (item.category && item.category.toLowerCase().includes(lowerCaseQuery));
-        });
+    filteredItems() {
+      if (!this.searchQuery) {
+        return this.items;
       }
+      const lowerCaseQuery = this.searchQuery.toLowerCase();
+      return this.items.filter(item => {
+        return item.id === null || 
+               (item.name && item.name.toLowerCase().includes(lowerCaseQuery)) ||
+               (item.category && item.category.toLowerCase().includes(lowerCaseQuery));
+      });
+    },
+    sortedItems() {
       if (!this.sortKey) {
-        this.sortedItemsSnapshot = filtered; // Update snapshot when not sorted
-        return filtered;
+        return this.filteredItems;
       }
-
-      // If an item is being edited, return the snapshot to prevent focus loss
-      if (this.isEditingActive) {
-        return this.sortedItemsSnapshot;
-      }
-
-      const sorted = [...filtered].sort((a, b) => {
+      const sorted = [...this.filteredItems].sort((a, b) => {
         if (a.id === null) return 1;
         if (b.id === null) return -1;
         let valA = a[this.sortKey];
@@ -178,8 +173,31 @@ export default {
         if (valA > valB) return this.sortAsc ? 1 : -1;
         return 0;
       });
-      this.sortedItemsSnapshot = sorted; // Update snapshot after sorting
       return sorted;
+    },
+    filteredAndSortedItems() {
+      if (this.isEditingActive) {
+        return this.sortedItemsSnapshot;
+      }
+      return this.sortedItems;
+    }
+  },
+  watch: {
+    sortedItems: {
+      handler(newVal) {
+        if (!this.isEditingActive) {
+          this.sortedItemsSnapshot = newVal;
+        }
+      },
+      immediate: true
+    },
+    isEditingActive(newVal) {
+      if (newVal === false) {
+        this.$nextTick(() => {
+          this.sortedItemsSnapshot = [...this.sortedItems];
+        });
+      }
+    }
   },
   mounted() {
     this.loadAllItems();
@@ -374,10 +392,6 @@ export default {
       }
     },
     startEditMode(rowIndex, colIndex, event) {
-      // Capture the current sorted state before entering edit mode
-      if (!this.isEditingActive) {
-        this.sortedItemsSnapshot = [...this.filteredAndSortedItems];
-      }
       this.editingCell = { rowIndex, colIndex };
       this.isEditingActive = true; // Set editing flag
       if (event && event.key === 'F2') {

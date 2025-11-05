@@ -153,30 +153,25 @@ export default {
     };
   },
   computed: {
-    filteredAndSortedCustomers() {
-      let filtered = this.customers;
-      if (this.searchQuery) {
-        const lowerCaseQuery = this.searchQuery.toLowerCase();
-        filtered = this.customers.filter(customer => {
-          return customer.id === null || 
-                 (customer.first_name && customer.first_name.toLowerCase().includes(lowerCaseQuery)) ||
-                 (customer.last_name && customer.last_name.toLowerCase().includes(lowerCaseQuery)) ||
-                 (customer.email && customer.email.toLowerCase().includes(lowerCaseQuery)) ||
-                 (customer.phone && customer.phone.toLowerCase().includes(lowerCaseQuery)) ||
-                 (customer.city && customer.city.toLowerCase().includes(lowerCaseQuery));
-        });
+    filteredCustomers() {
+      if (!this.searchQuery) {
+        return this.customers;
       }
+      const lowerCaseQuery = this.searchQuery.toLowerCase();
+      return this.customers.filter(customer => {
+        return customer.id === null || 
+               (customer.first_name && customer.first_name.toLowerCase().includes(lowerCaseQuery)) ||
+               (customer.last_name && customer.last_name.toLowerCase().includes(lowerCaseQuery)) ||
+               (customer.email && customer.email.toLowerCase().includes(lowerCaseQuery)) ||
+               (customer.phone && customer.phone.toLowerCase().includes(lowerCaseQuery)) ||
+               (customer.city && customer.city.toLowerCase().includes(lowerCaseQuery));
+      });
+    },
+    sortedCustomers() {
       if (!this.sortKey) {
-        this.sortedCustomersSnapshot = filtered; // Update snapshot when not sorted
-        return filtered;
+        return this.filteredCustomers;
       }
-
-      // If a customer is being edited, return the snapshot to prevent focus loss
-      if (this.isEditingActive) {
-        return this.sortedCustomersSnapshot;
-      }
-
-      const sorted = [...filtered].sort((a, b) => {
+      const sorted = [...this.filteredCustomers].sort((a, b) => {
         if (a.id === null) return 1;
         if (b.id === null) return -1;
         let valA = a[this.sortKey];
@@ -191,8 +186,30 @@ export default {
         if (valA > valB) return this.sortAsc ? 1 : -1;
         return 0;
       });
-      this.sortedCustomersSnapshot = sorted; // Update snapshot after sorting
       return sorted;
+    },
+    filteredAndSortedCustomers() {
+      if (this.isEditingActive) {
+        return this.sortedCustomersSnapshot;
+      }
+      return this.sortedCustomers;
+    }
+  },
+  watch: {
+    sortedCustomers: {
+      handler(newVal) {
+        if (!this.isEditingActive) {
+          this.sortedCustomersSnapshot = newVal;
+        }
+      },
+      immediate: true
+    },
+    isEditingActive(newVal) {
+      if (newVal === false) {
+        this.$nextTick(() => {
+          this.sortedCustomersSnapshot = [...this.sortedCustomers];
+        });
+      }
     }
   },
   mounted() {
